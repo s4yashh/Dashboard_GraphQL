@@ -1,61 +1,44 @@
-import React, { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { GET_USERS } from './dashboard.graphql';
-import { User } from '../types/user';
-import { Loader } from '../components/Loader';
-import { Button } from '../components/Button';
-import { UserTable } from './UserTable';
-import { UserModal } from './UserModal';
+import { useQuery } from "@apollo/client";
+import { GET_USER_DBS } from "./queries";
 
-export const Dashboard: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { data, loading, error, refetch } = useQuery(GET_USERS);
+const Dashboard = () => {
+  const { data, loading, error } = useQuery(GET_USER_DBS);
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setIsModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setSelectedUser(null);
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedUser(null);
-  };
-
-  const handleSave = () => {
-    refetch();
-    handleModalClose();
-  };
-
-  if (loading) return <Loader fullScreen />;
-  if (error) return <div className="text-red-600">Error: {error.message}</div>;
+  if (loading) return <p>Loading user data...</p>;
+  if (error) return <p>Error fetching userDb</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">User Dashboard</h1>
-          <Button onClick={handleAdd} variant="primary">
-            Add User
-          </Button>
-        </div>
+    <div style={{ padding: 40 }}>
+      <h2>UserDB Dashboard</h2>
 
-        <UserTable users={data?.users || []} onEdit={handleEdit} onRefetch={refetch} />
+      <table border={1} cellPadding={10}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-        {isModalOpen && (
-          <UserModal
-            user={selectedUser}
-            isOpen={isModalOpen}
-            onClose={handleModalClose}
-            onSave={handleSave}
-          />
-        )}
-      </div>
+        <tbody>
+          {data.userDbs.map((user: any) => (
+            <tr key={user.documentId}>
+              <td>{user.Name}</td>
+              <td>{user.email}</td>
+              <td>{user.phone}</td>
+              <td>{user.is_active ? "Yes" : "No"}</td>
+              <td>
+                <button>Edit</button>
+                <button>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
+
+export default Dashboard;
