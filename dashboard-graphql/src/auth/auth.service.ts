@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import { apolloClient } from '../apollo/client';
-import { AuthResponse, LoginInput, SignupInput } from '../types/user';
+import type { AuthResponse, LoginInput, SignupInput } from '../types/user';
 import { saveToken, removeToken } from '../utils/token';
 
 const LOGIN_MUTATION = gql`

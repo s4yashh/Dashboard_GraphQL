@@ -1,95 +1,166 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
-import { authService } from './auth.service';
+import { gql, useMutation } from "@apollo/client";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-export const Signup: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const SIGNUP_MUTATION = gql`
+  mutation Register($username: String!, $email: String!, $password: String!) {
+    register(input: { username: $username, email: $email, password: $password }) {
+      jwt
+      user {
+        id
+        username
+        email
+      }
+    }
+  }
+`;
+
+const Signup = () => {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [signup, { loading }] = useMutation(SIGNUP_MUTATION, {
+    onCompleted: (data) => {
+      localStorage.setItem("token", data.register.jwt);
+      navigate("/dashboard");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await authService.signup({ name, email, password });
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
-    } finally {
-      setIsLoading(false);
-    }
+    signup({
+      variables: {
+        username,
+        email,
+        password,
+      },
+    }).catch((err) => {
+      setError(err.graphQLErrors?.[0]?.message || "Signup failed");
+    });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5" }}>
+      <div style={{ maxWidth: 400, width: "100%", padding: 40, backgroundColor: "white", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+        <h2 style={{ textAlign: "center", marginBottom: 30, fontSize: "28px", fontWeight: "bold" }}>Sign Up</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: "block", marginBottom: 5, fontWeight: "500" }}>Username</label>
+            <input
+              type="text"
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: "block", marginBottom: 5, fontWeight: "500" }}>Email</label>
+            <input
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: "block", marginBottom: 5, fontWeight: "500" }}>Password</label>
+            <input
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", marginBottom: 5, fontWeight: "500" }}>Confirm Password</label>
+            <input
+              type="password"
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "12px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              fontSize: "16px",
+              fontWeight: "500",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? "Creating account..." : "Sign Up"}
+          </button>
+
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-700">{error}</p>
+            <div style={{ marginTop: 15, padding: 12, backgroundColor: "#ffebee", borderRadius: "4px", color: "#c62828" }}>
+              <p style={{ margin: 0, fontSize: "14px" }}>{error}</p>
             </div>
           )}
-          
-          <Input
-            label="Full Name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          
-          <Input
-            label="Email address"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          
-          <Input
-            label="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          
-          <Button type="submit" isLoading={isLoading} className="w-full">
-            Sign up
-          </Button>
         </form>
-        
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: "14px", color: "#666" }}>
+          Already have an account?{" "}
+          <Link to="/login" style={{ color: "#2196F3", textDecoration: "none", fontWeight: "500" }}>
             Sign in
           </Link>
         </p>
@@ -97,3 +168,5 @@ export const Signup: React.FC = () => {
     </div>
   );
 };
+
+export default Signup;

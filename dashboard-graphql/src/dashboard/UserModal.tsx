@@ -1,132 +1,231 @@
-import React, { useState, useEffect } from 'react';
-import { useMutation } from '@apollo/client';
-import { User } from '../types/user';
-import { CREATE_USER, UPDATE_USER, GET_USERS } from './dashboard.graphql';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
+import { useMutation } from "@apollo/client";
+import { useState, useEffect } from "react";
+import { CREATE_USER_DB, UPDATE_USER_DB } from "./mutations";
+import { GET_USER_DBS } from "./queries";
 
 interface UserModalProps {
-  user: User | null;
-  isOpen: boolean;
+  user: any | null;
   onClose: () => void;
   onSave: () => void;
 }
 
-export const UserModal: React.FC<UserModalProps> = ({ user, isOpen, onClose, onSave }) => {
+const UserModal = ({ user, onClose, onSave }: UserModalProps) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: '',
+    Name: "",
+    email: "",
+    phone: "",
+    is_active: true,
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const [createUser, { loading: createLoading }] = useMutation(CREATE_USER, {
-    refetchQueries: [{ query: GET_USERS }],
+  const [createUserDb, { loading: createLoading }] = useMutation(CREATE_USER_DB, {
+    refetchQueries: [{ query: GET_USER_DBS }],
   });
 
-  const [updateUser, { loading: updateLoading }] = useMutation(UPDATE_USER, {
-    refetchQueries: [{ query: GET_USERS }],
+  const [updateUserDb, { loading: updateLoading }] = useMutation(UPDATE_USER_DB, {
+    refetchQueries: [{ query: GET_USER_DBS }],
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        role: user.role || '',
+        Name: user.Name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        is_active: user.is_active !== undefined ? user.is_active : true,
       });
     } else {
-      setFormData({ name: '', email: '', role: '' });
+      setFormData({
+        Name: "",
+        email: "",
+        phone: "",
+        is_active: true,
+      });
     }
-    setError('');
-  }, [user, isOpen]);
+    setError("");
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
+
+    if (!formData.Name.trim() || !formData.email.trim()) {
+      setError("Name and Email are required");
+      return;
+    }
 
     try {
       if (user) {
-        await updateUser({
+        await updateUserDb({
           variables: {
             id: user.id,
-            ...formData,
+            data: formData,
           },
         });
       } else {
-        await createUser({
-          variables: formData,
+        await createUserDb({
+          variables: {
+            data: formData,
+          },
         });
       }
       onSave();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Operation failed');
+    } catch (err: any) {
+      console.error("Error:", err);
+      setError(err?.graphQLErrors?.[0]?.message || err?.message || "Operation failed");
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-2xl font-bold mb-4">
-          {user ? 'Edit User' : 'Add New User'}
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          padding: "30px",
+          maxWidth: "500px",
+          width: "90%",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 style={{ marginBottom: "20px", fontSize: "24px", fontWeight: "bold" }}>
+          {user ? "Edit User" : "Add New User"}
         </h2>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div style={{ backgroundColor: "#fee", padding: "10px", marginBottom: "15px", borderRadius: "4px", color: "#c00" }}>
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Name</label>
+            <input
+              type="text"
+              name="Name"
+              value={formData.Name}
+              onChange={handleChange}
+              required
+              style={{
+                width: "100%",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
 
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              style={{
+                width: "100%",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
 
-          <Input
-            label="Role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-          />
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Phone</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              style={{
+                width: "100%",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
 
-          <div className="flex gap-2 justify-end mt-6">
-            <Button
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "flex", alignItems: "center" }}>
+              <input
+                type="checkbox"
+                name="is_active"
+                checked={formData.is_active}
+                onChange={handleChange}
+                style={{ marginRight: "8px" }}
+              />
+              <span>Active</span>
+            </label>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <button
               type="button"
-              variant="secondary"
               onClick={onClose}
               disabled={createLoading || updateLoading}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#ddd",
+                color: "#333",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              isLoading={createLoading || updateLoading}
+              disabled={createLoading || updateLoading}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#2196F3",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
             >
-              {user ? 'Update' : 'Create'}
-            </Button>
+              {createLoading || updateLoading ? "Saving..." : user ? "Update" : "Create"}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 };
+
+export default UserModal;

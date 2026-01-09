@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMutation } from '@apollo/client';
-import { User } from '../types/user';
-import { DELETE_USER } from './dashboard.graphql';
+import type { User } from '../types/user';
+import { DELETE_USER_DB } from './mutations';
 import { Button } from '../components/Button';
 
 interface UserTableProps {
